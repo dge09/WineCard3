@@ -1,0 +1,23 @@
+﻿@page "/"
+@using WineCard3.MyDB.Enities
+@using WineCard3.MyDB.Services
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+
+@code
+{
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<Origin> Origins = await MySer.originServices.GetAllAsync();
+        List<Style> Styles = await MySer.styleServices.GetAllAsync();
+        List<Wine> Wines = await MySer.wineServices.GetAllAsync();
+        List<Card> Cards = await MySer.cardServices.GetAllAsync();
+        await base.OnInitializedAsync();
+    }
+}

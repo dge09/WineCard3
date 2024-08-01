@@ -1,0 +1,44 @@
+﻿@page "/pcsv"
+@using CsvHelper
+@using System.Globalization
+@using WineCard3.MyDB.Services
+@rendermode InteractiveServer
+
+<PageTitle>CsvImport</PageTitle>
+
+<h1>Csv Import</h1>
+<div>
+    <InputFile OnChange="ImportCsv"/>
+</div>
+
+
+
+@code {
+
+
+
+    private async Task ImportCsv(InputFileChangeEventArgs e)
+    {
+        List<string> csvLines = new();
+        var file = e.File;
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffer);
+
+        var filePath = Path.Combine("wwwroot", file.Name);
+        await using (var fss = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+        {
+            await fss.WriteAsync(buffer);
+        }
+
+        using (var reader = new StreamReader(filePath))
+        {
+            reader.ReadLine();
+            while (!reader.EndOfStream)
+            {
+                csvLines.Add(reader.ReadLine());
+            }
+        }
+
+        await MySer.csvServices.SecureCsvDataExistancyInDb(csvLines);
+    }
+}

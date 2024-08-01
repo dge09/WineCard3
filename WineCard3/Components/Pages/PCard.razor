@@ -1,0 +1,31 @@
+﻿@page "/pcard"
+@using WineCard3.MyDB.Enities
+@using WineCard3.MyDB.Services
+@attribute [StreamRendering]
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather</h1>
+
+<p>This component demonstrates showing data.</p>
+
+@if (true)
+{
+}
+else
+{
+
+}
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        List<Origin> origins = await MySer.originServices.GetAllAsync();
+        List<Style> styles = await MySer.styleServices.GetAllAsync();
+        List<Wine> wines = await MySer.wineServices.GetAllAsync();
+        List<Card> cards = await MySer.cardServices.GetAllAsync();
+        await base.OnInitializedAsync();
+    }
+
+}
