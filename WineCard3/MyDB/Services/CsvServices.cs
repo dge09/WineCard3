@@ -19,7 +19,7 @@ namespace WineCard3.MyDB.Services
             await SecureExistanceWine(csvDtos);
             await SecureExistanceCard(csvDtos);
 
-            //await ConnectCardsWithWines(csvDtos);
+            await ConnectCardsWithWines(csvDtos);
         }
 
         private List<CsvDto> GetCsvDtos(List<String> csvLines)

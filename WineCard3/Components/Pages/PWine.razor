@@ -8,37 +8,113 @@
 <h1>Weine:</h1>
 
 
-<dialog open="@ShowCRUDModal" @onclose="ToggleCRUDModal">
-    <div>
-        <label>Weinname:</label>
-        <InputText @bind-Value="selectedWine.WineName"></InputText>
-    </div>
-    <div>
-        <label>Style:</label>
-        <InputText @bind-Value="selectedWine.Style.StyleDscp"></InputText>
-    </div>
-    <div>
-        <label>Süße:</label>
-        <InputNumber @bind-Value="selectedWine.SweetnessLevel"></InputNumber>
-    </div>
-    <div>
-        <label>Jahrgang:</label>
-        <InputNumber @bind-Value="selectedWine.Year"></InputNumber>
-    </div>
-    <div>
-        <label>Bewertung:</label>
-        <InputNumber @bind-Value="selectedWine.Rating"></InputNumber>
-    </div>
-    <div>
-        <label>Herkunft:</label>
-        <InputText @bind-Value="selectedWine.Origin.OriginName"></InputText>
-    </div>
-    <div>
-        <button @onclick="AddOrUpdateAsync">@ToDo</button>
-        <button @onclick="DeleteAsync">Delete</button>
-    </div>
-</dialog>
-@if(Wines != null)
+
+@if (ShowCreateModal)
+{
+    <dialog open="@ShowUpdateModal" @onclose="CloseDialog">
+        <div>
+           <label>Weinname:</label>
+            <InputText @bind-Value="newWine.WineName"></InputText>
+       </div>
+       <div>
+           <label>Style:</label>
+            <InputText @bind-Value="newWine.Style.StyleDscp"></InputText>
+       </div>
+       <div>
+           <label>Süße:</label>
+            <InputNumber @bind-Value="newWine.SweetnessLevel"></InputNumber>
+       </div>
+       <div>
+           <label>Jahrgang:</label>
+            <InputNumber @bind-Value="newWine.Year"></InputNumber>
+       </div>
+       <div>
+           <label>Bewertung:</label>
+            <InputNumber @bind-Value="newWine.Rating"></InputNumber>
+       </div>
+       <div>
+           <label>Herkunft:</label>
+            <InputText @bind-Value="newWine.Origin.OriginName"></InputText>
+       </div>
+       <div>
+           <button @onclick="AddOrUpdateAsync">Speichern</button>
+           <button @onclick="ToggleAddModal">Zurück</button>
+       </div>
+    </dialog>
+ }
+
+@if (ShowUpdateModal && selectedWine != null)
+{
+    <dialog open="@ShowUpdateModal">
+        <div>
+            <label>Weinname:</label>
+            <InputText @bind-Value="selectedWine.WineName"></InputText>
+        </div>
+        <div>
+            <label>Style:</label>
+            <InputText @bind-Value="selectedWine.Style.StyleDscp"></InputText>
+        </div>
+        <div>
+            <label>Süße:</label>
+            <InputNumber @bind-Value="selectedWine.SweetnessLevel"></InputNumber>
+        </div>
+        <div>
+            <label>Jahrgang:</label>
+            <InputNumber @bind-Value="selectedWine.Year"></InputNumber>
+        </div>
+        <div>
+            <label>Bewertung:</label>
+            <InputNumber @bind-Value="selectedWine.Rating"></InputNumber>
+        </div>
+        <div>
+            <label>Herkunft:</label>
+            <InputText @bind-Value="selectedWine.Origin.OriginName"></InputText>
+        </div>
+        <div>
+            <button @onclick="AddOrUpdateAsync">Speichern</button>
+            <button @onclick="() => ToggleUpdateModal(selectedWine)">Zurück</button>
+        </div>
+    </dialog>
+}
+
+@if (ShowDeleteModal && selectedWine != null)
+{
+    <dialog open="@ShowUpdateModal">
+        <div>
+            <label>Weinname:</label>
+            <label>@selectedWine.WineName</label>
+        </div>
+        <div>
+            <label>Style:</label>
+            <label>@selectedWine.Style.StyleDscp</label>
+        </div>
+        <div>
+            <label>Süße:</label>
+            <label>@selectedWine.SweetnessLevel</label>
+        </div>
+        <div>
+            <label>Jahrgang:</label>
+            <label>@selectedWine.Year</label>
+        </div>
+        <div>
+            <label>Bewertung:</label>
+            <label>@selectedWine.Rating</label>
+        </div>
+        <div>
+            <label>Herkunft:</label>
+            <label>@selectedWine.Origin.OriginName</label>
+        </div>
+        <div>
+            <button @onclick="AddOrUpdateAsync">Speichern</button>
+            <button @onclick="DeleteAsync">Delete</button>
+            <button @onclick="() => ToggleDeleteModal(selectedWine)">Zurück</button>
+        </div>
+    </dialog>
+}
+
+
+
+ @if(Wines != null)
 {
     <table class="table">
         <thead>
@@ -55,7 +131,7 @@
             </tr>
         </thead>
         <tbody>
-            @if (Wines.Count() > 0)
+             @if (Wines.Count() > 0)
             {
                 @foreach (Wine wine in Wines)
                 {
@@ -71,12 +147,12 @@
                             <button @onclick="() => ToggleUpdateModal(wine)">Bearbeiten</button>
                         </td>
                         <td>
-                            <button @onclick="() => ToggleDeleteModal(wine.ID)">Löschen</button>
+                            <button @onclick="() => ToggleDeleteModal(wine)">Löschen</button>
                         </td>
                     </tr>
                 }
             }
-        </tbody>
+         </tbody>
     </table>
     <button @onclick="() => ToggleAddModal()">Hinzufügen</button>
 }
@@ -85,7 +161,7 @@ else
     <div>
         <label>Loading</label>
     </div>
-}
+} 
 
 
 @code {
@@ -94,8 +170,12 @@ else
     private List<Style> Styles = new();
     private List<Card> Cards = new();
 
+    private Wine newWine = new();
+
     private Wine selectedWine = new();
-    private bool ShowCRUDModal = false;
+    private bool ShowCreateModal = false;
+    private bool ShowUpdateModal = false;
+    private bool ShowDeleteModal = false;
     private string ToDo = string.Empty;
 
     // WineName
@@ -108,17 +188,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        List<Origin> origins = await MySer.originServices.GetAllAsync();
-        List<Style> styles = await MySer.styleServices.GetAllAsync();
-        List<Wine> wines = await MySer.wineServices.GetAllAsync();
-        List<Card> cards = await MySer.cardServices.GetAllAsync();
+        await UpdateLists();
+
+        newWine = await MySer.wineServices.GetByIDAsync(1);
+
         await base.OnInitializedAsync();
     }
 
-
-    private void ToggleCRUDModal()
+    private async Task CloseDialog()
     {
-        ShowCRUDModal = !ShowCRUDModal;
+        ShowCreateModal = false;
+        ShowUpdateModal = false;
+        ShowDeleteModal = false;
     }
 
     private async Task AddOrUpdateAsync()
@@ -152,23 +233,25 @@ else
     private async Task DeleteAsync()
     {
         await MySer.wineServices.DeleteAsync(selectedWine);
+        ShowDeleteModal = false;
     }
 
-    private void ToggleAddModal()
+    private async void ToggleAddModal()
     {
-        ShowCRUDModal = true;
+        newWine = await MySer.wineServices.GetByIDAsync(1);
+        ShowCreateModal = true;
     }
 
     private void ToggleUpdateModal(Wine w)
     {
         selectedWine = w;
-        ShowCRUDModal = true;
+        ShowUpdateModal = true;
     }
 
-    private void ToggleDeleteModal(int ID)
+    private void ToggleDeleteModal(Wine w)
     {
-        selectedWine = Wines.Where(x => x.ID == ID).FirstOrDefault();
-        ShowCRUDModal = true;
+        selectedWine = w;
+        ShowDeleteModal = true;
     }
 
     private async Task UpdateLists()
