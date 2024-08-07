@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using WineCard3.MyDB.DTOs;
 using WineCard3.MyDB.Enities;
 
@@ -39,8 +40,8 @@ namespace WineCard3.MyDB.Services
                 newCsvDto.Style = csvLineElements[3];
                 newCsvDto.SweetnessLevel = int.Parse(csvLineElements[4]);
                 newCsvDto.Year = int.Parse(csvLineElements[5]);
-                newCsvDto.Rating = float.Parse(csvLineElements[6]);
-                newCsvDto.Price = float.Parse(csvLineElements[7]);
+                newCsvDto.Rating = float.Parse(csvLineElements[6], CultureInfo.InvariantCulture); // Culture info needed otherwise it doesn't read '.'
+                newCsvDto.Price = float.Parse(csvLineElements[7], CultureInfo.InvariantCulture); // Culture info needed otherwise it doesn't read '.'
                 newCsvDto.Origin = csvLineElements[8];
 
                 csvDtos.Add(newCsvDto);
@@ -65,7 +66,7 @@ namespace WineCard3.MyDB.Services
 
             foreach (string csvStyle in csvStyles)
             {
-                if(!dbStyles.Exists(x => x.StyleDscp == csvStyle)) 
+                if(!dbStyles.Exists(x => x.StyleDscp == csvStyle)) // every Style gets only saved once
                 {
                     Style newStyle = new Style();
                     newStyle.StyleDscp = csvStyle;
@@ -80,9 +81,10 @@ namespace WineCard3.MyDB.Services
             List<Origin> dbOrigins = await MySer.originServices.GetAllAsync();
             List<string> csvOrigins = new List<string>();
 
+            // Get all Origins from csvDTOs für insert
             foreach (CsvDto csvDto in csvDtos)
             {
-                if (csvDto.Origin != null && !csvOrigins.Exists(x => x == csvDto.Origin))
+                if (csvDto.Origin != null && !csvOrigins.Exists(x => x == csvDto.Origin)) // every Origin gets only saved once
                 {
                     csvOrigins.Add(csvDto.Origin);
                 }
@@ -90,7 +92,7 @@ namespace WineCard3.MyDB.Services
 
             foreach (string csvOrigin in csvOrigins)
             {
-                if (!dbOrigins.Exists(x => x.OriginName == csvOrigin))
+                if (!dbOrigins.Exists(x => x.OriginName == csvOrigin)) // every Origin gets only saved once
                 {
                     Origin newOrigin = new Origin();
                     newOrigin.OriginName = csvOrigin;
@@ -105,11 +107,12 @@ namespace WineCard3.MyDB.Services
             await UpdateLists();
             List<Wine> csvWines = new List<Wine>();
 
+            // Get all Wines from csvDTOs für insert
             foreach (CsvDto csvDto in csvDtos)
             {
                 Wine w = await GetWineFromCsvDto(csvDto);
 
-                if (!WineExistanceInList(csvWines,w))
+                if (!WineExistanceInList(csvWines,w)) // every Wine gets only saved once
                 {
                     csvWines.Add(w);
                 }
@@ -117,7 +120,7 @@ namespace WineCard3.MyDB.Services
 
             foreach (Wine csvWine in csvWines)
             {
-                if (!WineExistanceInList(dbWines,csvWine))
+                if (!WineExistanceInList(dbWines,csvWine)) // every Wine gets only saved once
                 {   
                     await MySer.wineServices.CreateAsync(csvWine);
                 }
@@ -129,12 +132,13 @@ namespace WineCard3.MyDB.Services
             await UpdateLists();
             List<Card> csvCards = new List<Card>();
 
+            // Get all Cards from csvDTOs für insert
             foreach (CsvDto csvDto in csvDtos)
             {
                 Card c = await GetCardFromCsvDto(csvDto);
 
                 if (!csvCards.Exists(x => x.CardName == c.CardName &&
-                                          x.CardDscp == c.CardDscp ))
+                                          x.CardDscp == c.CardDscp )) // every Card gets only saved once
                 {
                     csvCards.Add(c);
                 }
@@ -143,7 +147,7 @@ namespace WineCard3.MyDB.Services
             foreach (Card csvCard in csvCards)
             {
                 if (!dbCards.Exists(x => x.CardName == csvCard.CardName &&
-                                          x.CardDscp == csvCard.CardDscp))
+                                          x.CardDscp == csvCard.CardDscp)) // every Card gets only saved once
 
                     await MySer.cardServices.CreateAsync(csvCard);
                 }
@@ -153,9 +157,13 @@ namespace WineCard3.MyDB.Services
         {
             await UpdateLists();
 
+            // get all Lists of Wines for all Cards
             foreach (Card c in dbCards)
             {
-                foreach (CsvDto csvDto in csvDtos)
+
+                // evrey csvDto has only one Card and one Wine
+                // therefore you have to check which card the followup Wine is associated to
+                foreach (CsvDto csvDto in csvDtos) 
                 {
                     if (c.CardName == csvDto.CardName)
                     {
