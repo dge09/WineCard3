@@ -1,31 +1,461 @@
 ﻿@page "/pcard"
+@using Microsoft.EntityFrameworkCore
+@using WineCard3.MyDB
+@using WineCard3.MyDB.DTOs
 @using WineCard3.MyDB.Enities
 @using WineCard3.MyDB.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [StreamRendering]
+@rendermode InteractiveServer
 
-<PageTitle>Weather</PageTitle>
+<PageTitle>Cards</PageTitle>
 
-<h1>Weather</h1>
-
-<p>This component demonstrates showing data.</p>
-
-@if (true)
+@if (isUserAuthenticated)
 {
+    <h1>Cards:</h1>
+    
+    @* Details Modal *@
+    <dialog open="@ShowDetailModal" @onclose="CloseDialog">
+        <div>
+            <label>Karten Name:</label>
+            <label> @selectedCard.CardName </label>
+        </div>
+        <div>
+            <label>Beschreibung:</label>
+            <label> @selectedCard.CardDscp </label>
+        </div>
+    
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>WineName</th>
+                    <th>Style</th>
+                    <th>SweetnessLevel</th>
+                    <th>Year</th>
+                    <th>Rating</th>
+                    <th>Price</th>
+                    <th>Origin</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Cards.Count() > 0)
+                {
+                    @foreach (Wine scw in selectedCard.Wines)
+                    {
+                        <tr>
+                            <td>@scw.WineName</td>
+                            <td>@scw.Style.StyleDscp</td>
+                            <td>@scw.SweetnessLevel</td>
+                            <td>@scw.Year</td>
+                            <td>@scw.Rating</td>
+                            <td>@scw.Price</td>
+                            <td>@scw.Origin.OriginName</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <button @onclick="() => CloseDialog()">Zurück</button>
+    </dialog>
+    
+    @* Create Modal *@
+    <dialog open="@ShowCreateModal" @onclose="CloseDialog">
+        <div>
+            <label>Kartenname:</label>
+            <InputText @bind-Value="newCard.CardName"></InputText>
+        </div>
+        <div>
+            <label>Beschreibung:</label>
+        <InputText @bind-Value="newCard.CardDscp"></InputText>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>WineName</th>
+                    <th>Style</th>
+                    <th>SweetnessLevel</th>
+                    <th>Year</th>
+                    <th>Rating</th>
+                    <th>Price</th>
+                    <th>Origin</th>
+                    <th>Hinzufügen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (cwlDtos.Count() > 0)
+                {
+                    @foreach (CardWineListDTO cwlDto in cwlDtos)
+                    {
+                        <tr>
+                            <td>@cwlDto.DtoWine.WineName</td>
+                            <td>@cwlDto.DtoWine.Style.StyleDscp</td>
+                            <td>@cwlDto.DtoWine.SweetnessLevel</td>
+                            <td>@cwlDto.DtoWine.Year</td>
+                            <td>@cwlDto.DtoWine.Rating</td>
+                            <td>@cwlDto.DtoWine.Price</td>
+                            <td>@cwlDto.DtoWine.Origin.OriginName</td>
+                            <td>
+                                <InputCheckbox @onchange="() => ToggleWineInCard(cwlDto.DtoWine)" @bind-Value="cwlDto.IsPartOfCard"></InputCheckbox>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <button @onclick="() => CloseDialog()">Zurück</button>
+        <button @onclick="() => CreateNewCardAsync()">Speichern</button>
+    
+    </dialog>
+    
+    @* Update Modal *@
+    <dialog open="@ShowUpdateModal" @onclose="CloseDialog">
+        <div>
+            <label>Kartenname:</label>
+            <InputText @bind-Value="selectedCard.CardName"></InputText>
+        </div>
+        <div>
+            <label>Beschreibung:</label>
+            <InputText @bind-Value="selectedCard.CardDscp"></InputText>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>WineName</th>
+                    <th>Style</th>
+                    <th>SweetnessLevel</th>
+                    <th>Year</th>
+                    <th>Rating</th>
+                    <th>Price</th>
+                    <th>Origin</th>
+                    <th>Hinzufügen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (cwlDtos.Count() > 0)
+                {
+                    @foreach (CardWineListDTO cwlDto in cwlDtos)
+                    {
+                        <tr>
+                            <td>@cwlDto.DtoWine.WineName</td>
+                            <td>@cwlDto.DtoWine.Style.StyleDscp</td>
+                            <td>@cwlDto.DtoWine.SweetnessLevel</td>
+                            <td>@cwlDto.DtoWine.Year</td>
+                            <td>@cwlDto.DtoWine.Rating</td>
+                            <td>@cwlDto.DtoWine.Price</td>
+                            <td>@cwlDto.DtoWine.Origin.OriginName</td>
+                            <td>
+                                @* mit dto arbeiten... *@
+                                <InputCheckbox @onchange="() => ToggleWineInCard(cwlDto.DtoWine)" @bind-Value="cwlDto.IsPartOfCard"></InputCheckbox>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+        <button @onclick="() => CloseDialog()">Zurück</button>
+        <button @onclick="() => UpdateCardAsync()">Speichern</button>
+    </dialog>
+
+    
+    @* Delete Modal *@
+    <dialog open="@ShowDeleteModal">
+        <div>
+            <label>Weinname:</label>
+            <label>@selectedCard.CardName</label>
+        </div>
+        <div>
+            <label>Style:</label>
+            <label>@selectedCard.CardDscp</label>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>WineName</th>
+                    <th>Style</th>
+                    <th>SweetnessLevel</th>
+                    <th>Year</th>
+                    <th>Rating</th>
+                    <th>Price</th>
+                    <th>Origin</th>
+                    <th>Hinzufügen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Cards.Count() > 0)
+                {
+                    @foreach (Wine w in selectedCard.Wines)
+                    {
+                        <tr>
+                            <td>@w.WineName</td>
+                            <td>@w.Style.StyleDscp</td>
+                            <td>@w.SweetnessLevel</td>
+                            <td>@w.Year</td>
+                            <td>@w.Rating</td>
+                            <td>@w.Price</td>
+                            <td>@w.Origin.OriginName</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    
+        <div>
+            <button @onclick="DeleteAsync">Löschen</button>
+            <button @onclick="CloseDialog">Zurück</button>
+        </div>
+    </dialog>
+    
+
+    @* Table *@
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Karten Name</th>
+                <th>Beschreibung</th>
+                <th>Details</th>
+                <th>Bearbeiten</th>
+                <th>Löschen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Cards.Count() > 0)
+            {
+                @foreach (Card card in Cards)
+                {
+                    <tr>
+                        <td>@card.CardName</td>
+                        <td>@card.CardDscp</td>
+                        <td>
+                            <button @onclick="() => ToggleDetailModal(card)">Details</button>
+                        </td>
+                        <td>
+                            <button @onclick="() => ToggleUpdateModal(card)">Bearbeiten</button>
+                        </td>
+                        <td>
+                            <button @onclick="() => ToggleDeleteModal(card)">Löschen</button>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <button @onclick="() => ToggleAddModal()">Hinzufügen</button>
 }
 else
 {
-
+    <h1>You are not Authenticated to see this Site</h1>
 }
 
 @code {
+    private bool isUserAuthenticated;
+
+    private List<Style> Styles = new();
+    private List<Origin> Origins = new();
+    private List<Wine> Wines = new();
+    private List<Card> Cards = new();
+
+    private List<Wine> selectedCardWines = new();
+    private List<Wine> winesForNewWineCard = new();
+    private List<CardWineListDTO> cwlDtos = new();
+
+    private Card newCard = new();
+    private Card selectedCard = new();
+
+    private bool ShowDetailModal = false;
+    private bool ShowCreateModal = false;
+    private bool ShowUpdateModal = false;
+    private bool ShowDeleteModal = false;
+
+    private DataContext _context = new();
 
     protected override async Task OnInitializedAsync()
     {
-        List<Origin> origins = await MySer.originServices.GetAllAsync();
-        List<Style> styles = await MySer.styleServices.GetAllAsync();
-        List<Wine> wines = await MySer.wineServices.GetAllAsync();
-        List<Card> cards = await MySer.cardServices.GetAllAsync();
+        // get authentication State
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isUserAuthenticated = authState.User.Identity.IsAuthenticated;
+
+        // get Database Data
+        await UpdateListsAsync();
+
         await base.OnInitializedAsync();
     }
 
+    private async Task ToggleDetailModal(Card cardToShowDetailsOf)
+    {
+        selectedCard = cardToShowDetailsOf;
+        ShowDetailModal = true;
+    }
+
+    private async void ToggleAddModal()
+    {
+        newCard = await GetCardForCreateModal(); // needed so there is no NullReferenceException on opening dialog and bind-value on null values
+
+        foreach (Wine wine in Wines) // needed as setup for simplyer adding of Wines to Card
+        {
+            CardWineListDTO cwlDto = new(wine);
+
+            cwlDto.IsPartOfCard = false;
+
+            cwlDtos.Add(cwlDto);
+        }
+
+        ShowCreateModal = true;
+    }
+
+    private async void ToggleUpdateModal(Card card)
+    {
+        selectedCard = card;
+
+        // to define if Wine is part of card or not
+        foreach (Wine wine in Wines)
+        {
+            CardWineListDTO cwlDto = new(wine);
+
+            if (selectedCard.Wines.Count(x => x.WineName == wine.WineName && 
+                                              x.StyleID == wine.StyleID &&  
+                                              x.SweetnessLevel == wine.SweetnessLevel &&  
+                                              x.Price == wine.Price &&  
+                                              x.Rating == wine.Rating &&  
+                                              x.OriginID == wine.OriginID &&  
+                                              x.Year == wine.Year ) > 0)
+            {
+                cwlDto.IsPartOfCard = true;
+            }
+            else
+            {
+                cwlDto.IsPartOfCard = false;
+            }
+
+            cwlDtos.Add(cwlDto);
+        }
+
+        ShowUpdateModal = true;
+    }
+
+    private async void ToggleDeleteModal(Card card)
+    {
+        selectedCard = card;
+        ShowDeleteModal = true;
+    }
+
+    private async Task CloseDialog()
+    {
+        ShowDetailModal = false;
+        ShowCreateModal = false;
+        ShowUpdateModal = false;
+        ShowDeleteModal = false;
+
+        cwlDtos.Clear();
+    }
+
+    private async Task UpdateListsAsync()
+    {
+        Styles = await MySer.styleServices.GetAllAsync();
+        Origins = await MySer.originServices.GetAllAsync();
+        Wines = await MySer.wineServices.GetAllAsync();
+        
+        // EF Core doesn't automaticaly load the data from the many to many table "WineCard"
+        // therefore we first get all cards and then explicitly create a connection between the two
+        Cards = await MySer.cardServices.GetAllAsync();
+        Cards = await GetCardWithWinesForUpdateAsync(Cards);
+    }
+
+    private async Task<List<Card>> GetCardWithWinesForUpdateAsync(List<Card> cardsToGetWinesFor)
+    {
+        List<Card> cardsWithWines = new();
+
+        // explicitly include the Wines Table so that the WineCard Table gets loaded and therefore the Collection of Wines for each Card gets loaded
+        foreach (Card card in cardsToGetWinesFor)
+        {
+            cardsWithWines.Add(await _context.Cards.Include(c => c.Wines).SingleOrDefaultAsync(c => c.ID == card.ID));
+        }
+
+        // just to secure the Wine Object is completly loaded we explicitly load the Style and Origin objects again
+        foreach (Card card in cardsWithWines)
+        {
+            foreach (Wine wine in card.Wines)
+            {
+                wine.Style = Styles.Where(x => x.ID == wine.StyleID).First();
+                wine.Origin = Origins.Where(x => x.ID == wine.OriginID).First();
+            }
+        }
+
+        return cardsWithWines;
+    }
+
+    private async Task<Card> GetCardForCreateModal()
+    {
+        // create Card with default Values
+        Card newCard = new()
+        {
+            CardName = "Weinkarte für",
+            CardDscp = "Lokale Weine von",
+        };
+
+        return newCard;
+    }
+
+    private async Task ToggleWineInCard(Wine w)
+    {
+        if (winesForNewWineCard.Count(x => x == w) > 0)
+        {
+            winesForNewWineCard.Add(w);
+        }
+        else
+        {
+            winesForNewWineCard.Remove(w);
+        }
+    }
+
+    private async Task CreateNewCardAsync()
+    {
+        newCard.Wines.Clear();
+
+        foreach (CardWineListDTO cwlDto in cwlDtos)
+        {
+            if (cwlDto.IsPartOfCard)
+            {
+                newCard.Wines.Add(cwlDto.DtoWine);
+            }
+        }
+
+        await MySer.cardServices.CreateAsync(newCard);
+
+        winesForNewWineCard.Clear();
+
+        await CloseDialog();
+
+        await UpdateListsAsync();
+    }
+
+    private async Task UpdateCardAsync()
+    {
+        await UpdateListsAsync();
+
+        selectedCard.Wines.Clear();
+
+        foreach (CardWineListDTO cwlDto in cwlDtos)
+        {
+            if (cwlDto.IsPartOfCard)
+            {
+                selectedCard.Wines.Add(cwlDto.DtoWine);
+            }
+        }
+
+        await MySer.cardServices.UpdateAsync(selectedCard);
+
+        await CloseDialog();
+
+        await UpdateListsAsync();
+    }
+
+    private async Task DeleteAsync()
+    {
+        await MySer.cardServices.DeleteByIDAsync(selectedCard.ID);
+
+        await CloseDialog();
+
+        await UpdateListsAsync();
+    }
 }

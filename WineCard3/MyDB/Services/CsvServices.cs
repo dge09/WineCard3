@@ -2,6 +2,7 @@
 using WineCard3.MyDB.DTOs;
 using WineCard3.MyDB.Enities;
 
+
 namespace WineCard3.MyDB.Services
 {
     public class CsvServices
@@ -13,13 +14,13 @@ namespace WineCard3.MyDB.Services
 
         public async Task SecureCsvDataExistancyInDb(List<String> csvLines)
         {
-            List<CsvDto> csvDtos = GetCsvDtos(csvLines);
-            await SecureExistanceStyle(csvDtos);
-            await SecureExistanceOrigin(csvDtos);
-            await SecureExistanceWine(csvDtos);
-            await SecureExistanceCard(csvDtos);
+            List<CsvDto> csvDtos = GetCsvDtos(csvLines); // Split line into DTO
+            await SecureExistanceStyle(csvDtos); // Create Style if it doesn't exist
+            await SecureExistanceOrigin(csvDtos); // Create Origin if it doesn't exist
+            await SecureExistanceWine(csvDtos); // Create Wine if it doesn't exist
+            await SecureExistanceCard(csvDtos); // Create Card if it doesn't exist
 
-            await ConnectCardsWithWines(csvDtos);
+            await ConnectCardsWithWines(csvDtos); // Create connection between Card and according Wines
         }
 
         private List<CsvDto> GetCsvDtos(List<String> csvLines)
@@ -53,9 +54,10 @@ namespace WineCard3.MyDB.Services
             List <Style> dbStyles = await MySer.styleServices.GetAllAsync();
             List<string> csvStyles = new List<string>();
 
+            // Get all styles from csvDTOs für insert
             foreach (CsvDto csvDto in csvDtos)
             {
-                if(csvDto.Style != null && !csvStyles.Exists(x => x == csvDto.Style))
+                if(csvDto.Style != null && !csvStyles.Exists(x => x == csvDto.Style)) // every Style gets only saved once
                 {
                     csvStyles.Add(csvDto.Style);
                 }
@@ -63,7 +65,7 @@ namespace WineCard3.MyDB.Services
 
             foreach (string csvStyle in csvStyles)
             {
-                if(!dbStyles.Exists(x => x.StyleDscp == csvStyle))
+                if(!dbStyles.Exists(x => x.StyleDscp == csvStyle)) 
                 {
                     Style newStyle = new Style();
                     newStyle.StyleDscp = csvStyle;
@@ -165,8 +167,11 @@ namespace WineCard3.MyDB.Services
                                                     x.Price == csvDto.Price &&
                                                     x.Origin.OriginName == csvDto.Origin).FirstOrDefault();
 
-                        c.Wines.Add(w);
-                        await MySer.cardServices.UpdateAsync(c);
+                        if (w != null)
+                        {
+                            c.Wines.Add(w);
+                            await MySer.cardServices.UpdateAsync(c);
+                        }
                     }
                 }
             }

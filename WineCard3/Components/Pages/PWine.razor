@@ -1,170 +1,185 @@
 ﻿@page "/pwine"
 @using WineCard3.MyDB.Enities
 @using WineCard3.MyDB.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>PWine</PageTitle>
 
-<h1>Weine:</h1>
-
-
-
-@if (ShowCreateModal)
+@if (isDoneLoading)
 {
-    <dialog open="@ShowUpdateModal" @onclose="CloseDialog">
-        <div>
-           <label>Weinname:</label>
-            <InputText @bind-Value="newWine.WineName"></InputText>
-       </div>
-       <div>
-           <label>Style:</label>
-            <InputText @bind-Value="newWine.Style.StyleDscp"></InputText>
-       </div>
-       <div>
-           <label>Süße:</label>
-            <InputNumber @bind-Value="newWine.SweetnessLevel"></InputNumber>
-       </div>
-       <div>
-           <label>Jahrgang:</label>
-            <InputNumber @bind-Value="newWine.Year"></InputNumber>
-       </div>
-       <div>
-           <label>Bewertung:</label>
-            <InputNumber @bind-Value="newWine.Rating"></InputNumber>
-       </div>
-       <div>
-           <label>Herkunft:</label>
-            <InputText @bind-Value="newWine.Origin.OriginName"></InputText>
-       </div>
-       <div>
-           <button @onclick="AddOrUpdateAsync">Speichern</button>
-           <button @onclick="ToggleAddModal">Zurück</button>
-       </div>
-    </dialog>
- }
-
-@if (ShowUpdateModal && selectedWine != null)
-{
-    <dialog open="@ShowUpdateModal">
-        <div>
-            <label>Weinname:</label>
-            <InputText @bind-Value="selectedWine.WineName"></InputText>
-        </div>
-        <div>
-            <label>Style:</label>
-            <InputText @bind-Value="selectedWine.Style.StyleDscp"></InputText>
-        </div>
-        <div>
-            <label>Süße:</label>
-            <InputNumber @bind-Value="selectedWine.SweetnessLevel"></InputNumber>
-        </div>
-        <div>
-            <label>Jahrgang:</label>
-            <InputNumber @bind-Value="selectedWine.Year"></InputNumber>
-        </div>
-        <div>
-            <label>Bewertung:</label>
-            <InputNumber @bind-Value="selectedWine.Rating"></InputNumber>
-        </div>
-        <div>
-            <label>Herkunft:</label>
-            <InputText @bind-Value="selectedWine.Origin.OriginName"></InputText>
-        </div>
-        <div>
-            <button @onclick="AddOrUpdateAsync">Speichern</button>
-            <button @onclick="() => ToggleUpdateModal(selectedWine)">Zurück</button>
-        </div>
-    </dialog>
-}
-
-@if (ShowDeleteModal && selectedWine != null)
-{
-    <dialog open="@ShowUpdateModal">
-        <div>
-            <label>Weinname:</label>
-            <label>@selectedWine.WineName</label>
-        </div>
-        <div>
-            <label>Style:</label>
-            <label>@selectedWine.Style.StyleDscp</label>
-        </div>
-        <div>
-            <label>Süße:</label>
-            <label>@selectedWine.SweetnessLevel</label>
-        </div>
-        <div>
-            <label>Jahrgang:</label>
-            <label>@selectedWine.Year</label>
-        </div>
-        <div>
-            <label>Bewertung:</label>
-            <label>@selectedWine.Rating</label>
-        </div>
-        <div>
-            <label>Herkunft:</label>
-            <label>@selectedWine.Origin.OriginName</label>
-        </div>
-        <div>
-            <button @onclick="AddOrUpdateAsync">Speichern</button>
-            <button @onclick="DeleteAsync">Delete</button>
-            <button @onclick="() => ToggleDeleteModal(selectedWine)">Zurück</button>
-        </div>
-    </dialog>
-}
-
-
-
- @if(Wines != null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>WineName</th>
-                <th>StyleID</th>
-                <th>SweetnessLevel</th>
-                <th>Year</th>
-                <th>Rating</th>
-                <th>Price</th>
-                <th>OriginID</th>
-                <th>Bearbeiten</th>
-                <th>Löschen</th>
-            </tr>
-        </thead>
-        <tbody>
-             @if (Wines.Count() > 0)
-            {
-                @foreach (Wine wine in Wines)
-                {
+    @if (isUserAuthenticated)
+    {
+        <h1>Weine:</h1>
+    
+        @* Create Modal *@
+        @if (ShowCreateModal)
+        {
+            <dialog open="@ShowCreateModal" @onclose="CloseDialog">
+                <div>
+                   <label>Weinname:</label>
+                    <InputText @bind-Value="newWine.WineName"></InputText>
+               </div>
+               <div>
+                   <label>Style:</label>
+                    <InputText @bind-Value="newWine.Style.StyleDscp"></InputText>
+               </div>
+               <div>
+                   <label>Süße:</label>
+                    <InputNumber @bind-Value="newWine.SweetnessLevel"></InputNumber>
+               </div>
+               <div>
+                   <label>Jahrgang:</label>
+                    <InputNumber @bind-Value="newWine.Year"></InputNumber>
+               </div>
+               <div>
+                   <label>Bewertung:</label>
+                    <InputNumber @bind-Value="newWine.Rating"></InputNumber>
+               </div>
+               <div>
+                   <label>Herkunft:</label>
+                    <InputText @bind-Value="newWine.Origin.OriginName"></InputText>
+               </div>
+               <div>
+                   <button @onclick="AddWineAsync">Speichern</button>
+                    <button @onclick="CloseDialog">Zurück</button>
+               </div>
+            </dialog>
+        }
+        
+    
+        @* Update Modal *@
+        @if (ShowUpdateModal)
+        {
+            <dialog open="@ShowUpdateModal">
+                <div>
+                    <label>Weinname:</label>
+                    <InputText @bind-Value="selectedWine.WineName"></InputText>
+                </div>
+                <div>
+                    <label>Style:</label>
+                    <InputText @bind-Value="selectedWine.Style.StyleDscp"></InputText>
+                </div>
+                <div>
+                    <label>Süße:</label>
+                    <InputNumber @bind-Value="selectedWine.SweetnessLevel"></InputNumber>
+                </div>
+                <div>
+                    <label>Jahrgang:</label>
+                    <InputNumber @bind-Value="selectedWine.Year"></InputNumber>
+                </div>
+                <div>
+                    <label>Bewertung:</label>
+                    <InputNumber @bind-Value="selectedWine.Rating"></InputNumber>
+                </div>
+                <div>
+                    <label>Herkunft:</label>
+                    <InputText @bind-Value="selectedWine.Origin.OriginName"></InputText>
+                </div>
+                <div>
+                    <button @onclick="UpdateWineAsync">Speichern</button>
+                    <button @onclick="CloseDialog">Zurück</button>
+                </div>
+            </dialog>
+        }
+    
+    
+        @* Delete Modal *@
+        @if (ShowDeleteModal)
+        {
+            <dialog open="@ShowDeleteModal">
+                <div>
+                    <label>Weinname:</label>
+                    <label>@selectedWine.WineName</label>
+                </div>
+                <div>
+                    <label>Style:</label>
+                    <label>@selectedWine.Style.StyleDscp</label>
+                </div>
+                <div>
+                    <label>Süße:</label>
+                    <label>@selectedWine.SweetnessLevel</label>
+                </div>
+                <div>
+                    <label>Jahrgang:</label>
+                    <label>@selectedWine.Year</label>
+                </div>
+                <div>
+                    <label>Bewertung:</label>
+                    <label>@selectedWine.Rating</label>
+                </div>
+                <div>
+                    <label>Herkunft:</label>
+                    <label>@selectedWine.Origin.OriginName</label>
+                </div>
+                <div>
+                    <button @onclick="DeleteAsync">Löschen</button>
+                    <button @onclick="CloseDialog">Zurück</button>
+                </div>
+            </dialog>
+        }
+    
+    
+        @* Table *@
+        @if(Wines != null)
+        {
+            <table class="table">
+                <thead>
                     <tr>
-                        <td>@wine.WineName</td>
-                        <td>@wine.Style.StyleDscp</td>
-                        <td>@wine.SweetnessLevel</td>
-                        <td>@wine.Year</td>
-                        <td>@wine.Rating</td>
-                        <td>@wine.Price</td>
-                        <td>@wine.Origin.OriginName</td>
-                        <td>
-                            <button @onclick="() => ToggleUpdateModal(wine)">Bearbeiten</button>
-                        </td>
-                        <td>
-                            <button @onclick="() => ToggleDeleteModal(wine)">Löschen</button>
-                        </td>
+                        <th>WineName</th>
+                        <th>StyleID</th>
+                        <th>SweetnessLevel</th>
+                        <th>Year</th>
+                        <th>Rating</th>
+                        <th>Price</th>
+                        <th>OriginID</th>
+                        <th>Bearbeiten</th>
+                        <th>Löschen</th>
                     </tr>
-                }
-            }
-         </tbody>
-    </table>
-    <button @onclick="() => ToggleAddModal()">Hinzufügen</button>
+                </thead>
+                <tbody>
+                     @if (Wines.Count() > 0)
+                    {
+                        @foreach (Wine wine in Wines)
+                        {
+                            <tr>
+                                <td>@wine.WineName</td>
+                                <td>@wine.Style.StyleDscp</td>
+                                <td>@wine.SweetnessLevel</td>
+                                <td>@wine.Year</td>
+                                <td>@wine.Rating</td>
+                                <td>@wine.Price</td>
+                                <td>@wine.Origin.OriginName</td>
+                                <td>
+                                    <button @onclick="() => ToggleUpdateModal(wine)">Bearbeiten</button>
+                                </td>
+                                <td>
+                                    <button @onclick="() => ToggleDeleteModal(wine)">Löschen</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                 </tbody>
+            </table>
+            <button @onclick="() => ToggleAddModal()">Hinzufügen</button>
+        }
+        else
+        {
+            <div>
+                <label>Loading</label>
+            </div>
+        } 
+    }
+    else
+    {
+        <h1>You are not Authenticated to see this Site</h1>
+    }
 }
-else
-{
-    <div>
-        <label>Loading</label>
-    </div>
-} 
-
 
 @code {
+    private bool isUserAuthenticated;
+
     private List<Wine> Wines = new();
     private List<Origin> Origins = new();
     private List<Style> Styles = new();
@@ -178,22 +193,26 @@ else
     private bool ShowDeleteModal = false;
     private string ToDo = string.Empty;
 
-    // WineName
-    // StyleID
-    // SweetnessLevel
-    // Year
-    // Rating
-    // Price
-    // OriginID
+    private bool isDoneLoading = false;
+
 
     protected override async Task OnInitializedAsync()
     {
-        await UpdateLists();
-
-        newWine = await MySer.wineServices.GetByIDAsync(1);
-
         await base.OnInitializedAsync();
+
+        // get authentication state
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isUserAuthenticated = authState.User.Identity.IsAuthenticated;
+
+        await UpdateListsAsync();
+
+        // predefine wine object as simple workaround for NullReferenceException on ToggleCreateModal
+        newWine = await GetWineForCreateModal();
+
+        isDoneLoading = true;
+
     }
+
 
     private async Task CloseDialog()
     {
@@ -202,44 +221,84 @@ else
         ShowDeleteModal = false;
     }
 
-    private async Task AddOrUpdateAsync()
+    private async Task AddWineAsync()
     {
-        await UpdateLists();
+        await UpdateListsAsync();
 
-        if (!Styles.Exists(x => x.StyleDscp == selectedWine.Style.StyleDscp))
-        {
-            await MySer.wineServices.CreateAsync(selectedWine);
-        }
+        // make sure Style and Origin before Wine gets created
+        newWine.Style = await SecureStyleExistance(newWine.Style.StyleDscp);
+        newWine.StyleID = newWine.Style.ID;
+        newWine.Origin = await SecureOriginExistance(newWine.Origin.OriginName);
+        newWine.OriginID = newWine.Origin.ID;
 
-        if (!Origins.Exists(x => x.OriginName == selectedWine.Origin.OriginName))
-        {
-            await MySer.wineServices.CreateAsync(selectedWine);
-        }
+        await MySer.wineServices.CreateAsync(newWine);
 
-        if (MySer.csvServices.WineExistanceInList(Wines, selectedWine))
-        {
-            //update
-            await MySer.wineServices.UpdateAsync(selectedWine);
-        }
-        else
-        {
-            //create
-            await MySer.wineServices.CreateAsync(selectedWine);
-        }
-
-        await UpdateLists();
+        await CloseDialog();
+        await UpdateListsAsync();
     }
+
+    private async Task UpdateWineAsync()
+    {
+        await UpdateListsAsync();
+
+        // make sure Style and Origin before Wine gets Updated
+        selectedWine.Style = await SecureStyleExistance(selectedWine.Style.StyleDscp);
+        selectedWine.StyleID = newWine.Style.ID;
+        selectedWine.Origin = await SecureOriginExistance(selectedWine.Origin.OriginName);
+        selectedWine.OriginID = newWine.Origin.ID;
+
+        await MySer.wineServices.UpdateAsync(selectedWine);
+
+        await CloseDialog();
+        await UpdateListsAsync();
+    }
+
+
+    private async Task<Style> SecureStyleExistance(string styleDscp)
+    {
+        // check if style already exists, if yes return Style if no create and then return Style
+        if (!Styles.Exists(x => x.StyleDscp == styleDscp))
+        {
+            Style newStyle = new();
+            newStyle.StyleDscp = styleDscp;
+            await MySer.styleServices.CreateAsync(newStyle);
+
+            await UpdateListsAsync();
+
+            return Styles.Where(x => x.StyleDscp == styleDscp).First();
+        }
+
+        return Styles.Where(x => x.StyleDscp == styleDscp).First();
+    }
+
+    private async Task<Origin> SecureOriginExistance(string originName)
+    {
+        // check if Origin already exists, if yes return Origin if no create and then return Origin
+        if (!Origins.Exists(x => x.OriginName == originName))
+        {
+            Origin newOrigin = new();
+            newOrigin.OriginName = originName;
+            await MySer.originServices.CreateAsync(newOrigin);
+
+            await UpdateListsAsync();
+        }
+
+        return Origins.Where(x => x.OriginName == originName).First();
+    }
+
 
     private async Task DeleteAsync()
     {
-        await MySer.wineServices.DeleteAsync(selectedWine);
+        await MySer.wineServices.DeleteByIDAsync(selectedWine.ID);
         ShowDeleteModal = false;
+        await UpdateListsAsync();
     }
 
     private async void ToggleAddModal()
     {
-        newWine = await MySer.wineServices.GetByIDAsync(1);
+        newWine = await GetWineForCreateModal();
         ShowCreateModal = true;
+        StateHasChanged();
     }
 
     private void ToggleUpdateModal(Wine w)
@@ -254,7 +313,33 @@ else
         ShowDeleteModal = true;
     }
 
-    private async Task UpdateLists()
+    private async Task<Wine> GetWineForCreateModal()
+    {
+
+        await UpdateListsAsync();
+
+        Style newStyle = await SecureStyleExistance("Dry");
+        Origin newOrigin = await SecureOriginExistance("Lustenau");
+
+        await UpdateListsAsync();
+
+        newWine = new()
+            {
+                WineName = "New Wine",
+                StyleID = newStyle.ID,
+                Style = newStyle,
+                SweetnessLevel = 4,
+                Year = 2000,
+                Rating = 4.6F,
+                Price = 14.49F,
+                OriginID = newOrigin.ID,
+                Origin = newOrigin
+            };
+
+        return newWine;
+    }   
+    
+    private async Task UpdateListsAsync()
     {
         Styles = await MySer.styleServices.GetAllAsync();
         Origins = await MySer.originServices.GetAllAsync();

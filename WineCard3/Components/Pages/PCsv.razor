@@ -2,34 +2,57 @@
 @using CsvHelper
 @using System.Globalization
 @using WineCard3.MyDB.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 
 <PageTitle>CsvImport</PageTitle>
 
-<h1>Csv Import</h1>
-<div>
-    <InputFile OnChange="ImportCsv"/>
-</div>
-
+@if (isUserAuthenticated)
+{
+    <h1>Csv Import</h1>
+    <div>
+        <InputFile OnChange="ImportCsv"/>
+    </div>
+    <label>@ImportStateMessage</label>
+}
+else
+{
+    <h1>You are not Authenticated to see this Site</h1>
+}
 
 
 @code {
+    private bool isUserAuthenticated = false;
 
+    private string ImportStateMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // get authentication State
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        isUserAuthenticated = authState.User.Identity.IsAuthenticated;
+
+        await base.OnInitializedAsync();
+    }
 
 
     private async Task ImportCsv(InputFileChangeEventArgs e)
     {
         List<string> csvLines = new();
+
+        // get file and safe/write it to local path so it can be read
         var file = e.File;
         var buffer = new byte[file.Size];
         await file.OpenReadStream().ReadAsync(buffer);
 
-        var filePath = Path.Combine("wwwroot", file.Name);
+        var filePath = Path.Combine("wwwroot", file.Name); // new Filepath
         await using (var fss = new FileStream(filePath, FileMode.Create, FileAccess.Write))
         {
             await fss.WriteAsync(buffer);
         }
 
+        // read new File for csvLines
         using (var reader = new StreamReader(filePath))
         {
             reader.ReadLine();
@@ -39,6 +62,8 @@
             }
         }
 
+        // gets DTOs of csv line, creats according objects, checks for their existance in DB, 
+        // writes them if they dont exist, connects the objects
         await MySer.csvServices.SecureCsvDataExistancyInDb(csvLines);
     }
 }
